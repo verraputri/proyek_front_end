@@ -1,0 +1,137 @@
+import {useState, useEffect} from "react";
+import "./App.css";
+import {db} from "./firebase-config";
+import {
+    collection,
+    getDocs,
+    addDoc,
+    updateDoc,
+    deleteDoc,
+    doc
+} from "firebase/firestore";
+
+// BOOTSTRAP IMPORTING
+import Table from 'react-bootstrap/Table';
+import Dropdown from 'react-bootstrap/Dropdown';
+import DropdownButton from 'react-bootstrap/DropdownButton';
+import InputGroup from 'react-bootstrap/InputGroup';
+import Button from 'react-bootstrap/Button';
+import Form from 'react-bootstrap/Form';
+
+function App() {
+    const [newTitle, setNewTitle] = useState("");
+    const [newAuthor, setNewAuthor] = useState("");
+    const [newStock, setNewStock] = useState(0);
+
+    const [books, setBooks] = useState([]);
+    const booksCollectionRef = collection(db, "books");
+
+    const createBook = async () => {
+        await addDoc(booksCollectionRef, {
+            title: newTitle,
+            author: newAuthor,
+            stock: Number(newStock)
+        });
+    };
+
+    const updateBook = async (id, stock) => {
+        const bookDoc = doc(db, "books", id);
+        const newFields = {
+            stock: stock + 1
+        };
+        await updateDoc(bookDoc, newFields);
+    };
+
+    const deleteBook = async (id) => {
+        const bookDoc = doc(db, "books", id);
+        await deleteDoc(bookDoc);
+    };
+
+    useEffect(() => {
+        const getBooks = async () => {
+            const data = await getDocs(booksCollectionRef);
+            setBooks(data.docs.map((doc) => ({
+                ...doc.data(),
+                id: doc.id
+            })));
+        };
+
+        getBooks();
+    }, []);
+
+    return (
+        <div classTitle="App">
+            <Form>
+                <Form.Group className="mb-3">
+                    <Form.Label>Title</Form.Label>
+                    <Form.Control placeholder="Add Title" type="text"
+                        onChange={
+                            (event) => {
+                                setNewTitle(event.target.value);
+                            }
+                    }></Form.Control>
+                </Form.Group>
+            </Form>
+            <Form>
+                <Form.Group className="mb-3">
+                    <Form.Label>Author</Form.Label>
+                    <Form.Control placeholder="Add Author Name" type="text"
+                        onChange={
+                            (event) => {
+                                setNewAuthor(event.target.value);
+                            }
+                    }></Form.Control>
+                </Form.Group>
+            </Form>
+            <Form>
+                <Form.Group className="mb-3">
+                    <Form.Label>Stock</Form.Label>
+                    <Form.Control type="number"
+                        onChange={
+                            (event) => {
+                                setNewStock(event.target.value);
+                            }
+                    }></Form.Control>
+                </Form.Group>
+            </Form>
+
+            <Button onClick={createBook}>Add New Book</Button>
+
+            <Table id='tb-reg' striped bordered hover size="sm">
+                <thead className='text-center align-middle'>
+                    <tr>
+                        <th>No</th>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Stock</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {
+                books.map((book, number) => {
+                    return (
+                        <tr key={number}>
+                            <td className="text-center">{number+1}</td>
+                            <td className="text-center">{book.title}</td>
+                            <td className="text-center">{book.author}</td>
+                            <td className="text-center">{book.stock}</td>
+                            <Button onClick={
+                                () => {
+                                    deleteBook(book.id);
+                                }
+                            }>
+                            Delete Book
+                            </Button>
+                        </tr>
+                    );
+                })
+                }
+                </tbody>
+            </Table>
+            
+        </div>
+    );
+}
+
+export default App;
